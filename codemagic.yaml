@@ -1,7 +1,7 @@
 workflows:
   android-workflow:
     name: Android Workflow
-    instance_type: mac_mini
+    instance_type: mac_mini_m2
     max_build_duration: 120
     environment:
       vars:
@@ -50,7 +50,7 @@ workflows:
 
   ios-workflow:
     name: iOS Workflow
-    instance_type: mac_mini
+    instance_type: mac_mini_m2
     max_build_duration: 120
     environment:
       vars:
@@ -81,6 +81,9 @@ workflows:
           flutter build ios \
             --release \
             --no-codesign
+      - name: Build iOS Simulator App
+        script: |
+          flutter build ios --debug --simulator
       - name: Package for App Store
         script: |
           cd ios
@@ -94,6 +97,7 @@ workflows:
           cd ..
     artifacts:
       - build/ios/iphoneos/Runner.app
+      - build/ios/iphonesimulator/Runner.app
       - ios/build/ios_build/**/*.ipa
     publishing:
 
@@ -106,7 +110,7 @@ workflows:
 
   full-workflow:
     name: Full Build (Android + iOS)
-    instance_type: mac_mini
+    instance_type: mac_mini_m2
     max_build_duration: 120
     environment:
       vars:
@@ -150,10 +154,14 @@ workflows:
           flutter build ios \
             --release \
             --no-codesign
+      - name: Build iOS Simulator App
+        script: |
+          flutter build ios --debug --simulator
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
       - build/app/outputs/bundle/release/app-release.aab
       - build/ios/iphoneos/Runner.app
+      - build/ios/iphonesimulator/Runner.app
     publishing:
 
       slack:
