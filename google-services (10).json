@@ -1,0 +1,130 @@
+{
+  "project_info": {
+    "project_number": "461699237422",
+    "project_id": "merorides-user",
+    "storage_bucket": "merorides-user.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:461699237422:android:c2724ea7bd1cd63b43c1bf",
+        "android_client_info": {
+          "package_name": "com.lamasparsha.merorider"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "461699237422-5jfa0arqc81pbvgjs5vlvu4kgouen0fi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lamasparsha.merorider",
+            "certificate_hash": "858561fa2a872bb1f9d1555a04c37c1138901159"
+          }
+        },
+        {
+          "client_id": "461699237422-fupundune4emhrc8gpnalvd1t365h4b7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lamasparsha.merorider",
+            "certificate_hash": "6ed72338c43df3cb349e908bf786b83876bda56c"
+          }
+        },
+        {
+          "client_id": "461699237422-g6iaejocrrm4io8n4te2vnocfgvocg88.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lamasparsha.merorider",
+            "certificate_hash": "f5e621a85398dd37508a6e87322fc94271b9182f"
+          }
+        },
+        {
+          "client_id": "461699237422-36cjqa7kbbo5mders2huv1gl28dhrelj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZUoD8lxG1uM8wIJ5BWysdwsh39kFcUEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "461699237422-36cjqa7kbbo5mders2huv1gl28dhrelj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "461699237422-b2ass4c4af3n2l7i4ujvg3f9c63vbj8g.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.merorides.meroridesuser"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:461699237422:android:f41290343a47411243c1bf",
+        "android_client_info": {
+          "package_name": "com.merorides.meroridesuser"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "461699237422-14i808dccucpac7e1r0q391717l1rmt2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.merorides.meroridesuser",
+            "certificate_hash": "6ed72338c43df3cb349e908bf786b83876bda56c"
+          }
+        },
+        {
+          "client_id": "461699237422-89vcvqnfpu90fidohtrvoq4pevj737k9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.merorides.meroridesuser",
+            "certificate_hash": "858561fa2a872bb1f9d1555a04c37c1138901159"
+          }
+        },
+        {
+          "client_id": "461699237422-ovkvvtij6bbuhcegpn8p3umn7cprnh8e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.merorides.meroridesuser",
+            "certificate_hash": "f5e621a85398dd37508a6e87322fc94271b9182f"
+          }
+        },
+        {
+          "client_id": "461699237422-36cjqa7kbbo5mders2huv1gl28dhrelj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZUoD8lxG1uM8wIJ5BWysdwsh39kFcUEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "461699237422-36cjqa7kbbo5mders2huv1gl28dhrelj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "461699237422-b2ass4c4af3n2l7i4ujvg3f9c63vbj8g.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.merorides.meroridesuser"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

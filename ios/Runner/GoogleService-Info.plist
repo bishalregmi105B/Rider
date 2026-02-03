@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>461699237422-dr5vp862abp8sfd80qsoj2p02njl5lp9.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.461699237422-dr5vp862abp8sfd80qsoj2p02njl5lp9</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>461699237422-14i808dccucpac7e1r0q391717l1rmt2.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyC5dzPwTI0XX4rpZn0x226c_g7P252Xg2g</string>
+	<key>GCM_SENDER_ID</key>
+	<string>461699237422</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.lamasparsha.merorider</string>
+	<key>PROJECT_ID</key>
+	<string>merorides-user</string>
+	<key>STORAGE_BUCKET</key>
+	<string>merorides-user.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:461699237422:ios:1b9a3181d52daa4843c1bf</string>
+</dict>
+</plist>
