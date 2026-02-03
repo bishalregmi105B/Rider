@@ -107,7 +107,7 @@ workflows:
   full-workflow:
     name: Full Build (Android + iOS)
     instance_type: mac_mini
-    max_build_duration: 180
+    max_build_duration: 120
     environment:
       vars:
         PACKAGE_NAME: "com.lamasparsha.merorider"
