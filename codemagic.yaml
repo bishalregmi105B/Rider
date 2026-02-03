@@ -4,8 +4,6 @@ workflows:
     instance_type: mac_mini
     max_build_duration: 120
     environment:
-      android_signing:
-        - ovoride_rider_key
       vars:
         PACKAGE_NAME: "com.lamasparsha.merorider"
         GRADLE_OPTS: "-Xmx3072m"
@@ -16,12 +14,11 @@ workflows:
       events:
         - push
         - pull_request
-      branch:
-        patterns:
-          - pattern: main
-            include: true
-          - pattern: develop
-            include: true
+      branch_patterns:
+        - pattern: main
+          include: true
+        - pattern: develop
+          include: true
     scripts:
       - name: Set up local.properties
         script: |
@@ -61,8 +58,6 @@ workflows:
     instance_type: mac_mini
     max_build_duration: 120
     environment:
-      ios_signing:
-        - ovoride_rider_ios_cert
       vars:
         BUNDLE_ID: "com.lamasparsha.merorider"
         XCODE_WORKSPACE: "ios/Runner.xcworkspace"
@@ -74,12 +69,11 @@ workflows:
       events:
         - push
         - pull_request
-      branch:
-        patterns:
-          - pattern: main
-            include: true
-          - pattern: develop
-            include: true
+      branch_patterns:
+        - pattern: main
+          include: true
+        - pattern: develop
+          include: true
     scripts:
       - name: Get Flutter packages
         script: |
@@ -125,10 +119,6 @@ workflows:
     instance_type: mac_mini
     max_build_duration: 180
     environment:
-      android_signing:
-        - ovoride_rider_key
-      ios_signing:
-        - ovoride_rider_ios_cert
       vars:
         PACKAGE_NAME: "com.lamasparsha.merorider"
         BUNDLE_ID: "com.lamasparsha.merorider"
@@ -139,10 +129,9 @@ workflows:
     triggering:
       events:
         - push
-      branch:
-        patterns:
-          - pattern: main
-            include: true
+      branch_patterns:
+        - pattern: main
+          include: true
     scripts:
       - name: Set up local.properties
         script: |
