@@ -78,10 +78,8 @@ workflows:
       - name: Build iOS Simulator App
         script: |
           flutter build ios --debug --simulator
-          cd "$CM_BUILD_DIR/build/ios/iphonesimulator"
-          zip -r "$CM_BUILD_DIR/build/ios/iphonesimulator/Runner.app.zip" Runner.app
     artifacts:
-      - build/ios/iphonesimulator/Runner.app.zip
+      - build/ios/iphonesimulator/Runner.app
     publishing:
       slack:
         channel: '#builds'
@@ -134,12 +132,10 @@ workflows:
       - name: Build iOS Simulator App
         script: |
           flutter build ios --debug --simulator
-          cd "$CM_BUILD_DIR/build/ios/iphonesimulator"
-          zip -r "$CM_BUILD_DIR/build/ios/iphonesimulator/Runner.app.zip" Runner.app
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
       - build/app/outputs/bundle/release/app-release.aab
-      - build/ios/iphonesimulator/Runner.app.zip
+      - build/ios/iphonesimulator/Runner.app
     publishing:
       slack:
         channel: '#builds'
