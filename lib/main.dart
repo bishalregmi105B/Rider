@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:ovorideuser/data/services/running_ride_service.dart';
 import 'package:ovorideuser/environment.dart';
 import 'package:ovorideuser/data/services/push_notification_service.dart';
+import 'package:ovorideuser/data/services/background_pusher_service.dart';
 import 'package:ovorideuser/core/route/route.dart';
 import 'package:ovorideuser/core/utils/messages.dart';
 import 'package:ovorideuser/data/controller/localization/localization_controller.dart';
@@ -51,8 +52,11 @@ Future<void> main() async {
   try {
     // Initialize push notification service and handle interaction messages
     await PushNotificationService(apiClient: Get.find()).setupInteractedMessage();
+
+    // Initialize background pusher service for handling events when app is in background
+    await BackgroundPusherService().initialize();
   } catch (e) {
-    // Print error to console if FCM setup fails
+    // Print error to console if FCM/Pusher setup fails
     printX(e);
   }
 
