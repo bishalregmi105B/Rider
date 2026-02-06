@@ -16,6 +16,7 @@ import 'package:ovorideuser/data/repo/ride/ride_repo.dart';
 import 'package:ovorideuser/presentation/screens/ride/widget/poly_line_map.dart';
 import 'package:ovorideuser/presentation/screens/ride/widget/ride_details_bottom_sheet_widget.dart';
 import 'package:toastification/toastification.dart';
+import 'package:ovorideuser/core/route/route.dart';
 
 class RideDetailsScreen extends StatefulWidget {
   final String rideId;
@@ -73,8 +74,11 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             canPop: false,
             onPopInvokedWithResult: (bool didPop, d) async {
               if (didPop) return;
-              printE(Get.previousRoute);
-              Get.back();
+              if (Navigator.canPop(context)) {
+                Get.back();
+              } else {
+                Get.offAllNamed(RouteHelper.dashboard);
+              }
               toastification.dismissAll();
             },
             child: Scaffold(
@@ -103,7 +107,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                         child: IconButton(
                           style: IconButton.styleFrom(backgroundColor: MyColor.colorWhite),
                           color: MyColor.colorBlack,
-                          onPressed: () => Get.back(result: true),
+                          onPressed: () {
+                            if (Navigator.canPop(context)) {
+                              Get.back(result: true);
+                            } else {
+                              Get.offAllNamed(RouteHelper.dashboard);
+                            }
+                          },
                           icon: const Icon(Icons.arrow_back_ios_new_rounded),
                         ),
                       ),

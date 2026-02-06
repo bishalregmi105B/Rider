@@ -14,6 +14,8 @@ import 'package:ovorideuser/data/model/global/response_model/unverified_response
 import 'package:ovorideuser/environment.dart';
 import 'package:ovorideuser/data/services/local_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ApiClient extends LocalStorageService {
   final dioX.Dio _dio = dioX.Dio();
@@ -160,13 +162,49 @@ class ApiClient extends LocalStorageService {
       });
 
       // Add files with dynamic keys - use for...in to properly await
+      // Compress images before upload to prevent "POST data too large" errors
       for (var entry in files.entries) {
+        File fileToUpload = entry.value;
+        String filePath = entry.value.path.toLowerCase();
+
+        // Compress if it's an image file
+        if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || filePath.endsWith('.png') || filePath.endsWith('.webp')) {
+          try {
+            // Read the file and check its size
+            int fileSize = await entry.value.length();
+            printX('📷 Original image size: ${(fileSize / 1024).toStringAsFixed(2)} KB');
+
+            // If file is larger than 500KB, compress it
+            if (fileSize > 500 * 1024) {
+              printX('📷 Compressing image...');
+              final tempDir = await getTemporaryDirectory();
+              final targetPath = '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+              final compressedFile = await FlutterImageCompress.compressAndGetFile(
+                entry.value.path,
+                targetPath,
+                minWidth: 1024,
+                minHeight: 1024,
+                quality: 70,
+              );
+
+              if (compressedFile != null) {
+                fileToUpload = File(compressedFile.path);
+                int newSize = await fileToUpload.length();
+                printX('📷 Compressed image size: ${(newSize / 1024).toStringAsFixed(2)} KB (${((1 - newSize / fileSize) * 100).toStringAsFixed(0)}% reduction)');
+              }
+            }
+          } catch (e) {
+            printX('Image compression warning: $e');
+          }
+        }
+
         formData.files.add(
           MapEntry(
             entry.key, // Dynamic key for each file
             await dioX.MultipartFile.fromFile(
-              entry.value.path,
-              filename: entry.value.path.split('/').last,
+              fileToUpload.path,
+              filename: fileToUpload.path.split('/').last,
             ),
           ),
         );

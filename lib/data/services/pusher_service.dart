@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:get/get.dart';
 import 'package:ovorideuser/core/helper/string_format_helper.dart';
 import 'package:ovorideuser/core/utils/method.dart';
@@ -26,6 +27,17 @@ class PusherManager {
     final apiKey = apiClient.getPushConfig().appKey ?? "";
     final cluster = apiClient.getPushConfig().cluster ?? "";
 
+    // iOS-specific debug logging
+    final platform = Platform.isIOS ? "iOS" : (Platform.isAndroid ? "Android" : "Unknown");
+    printX("📱 Platform: $platform");
+    printX("🔑 Pusher Init: apiKey=${apiKey.isNotEmpty ? '${apiKey.substring(0, 4)}...' : 'EMPTY'}, cluster=$cluster, channel=$channelName");
+
+    if (apiKey.isEmpty || cluster.isEmpty) {
+      printE("❌ PUSHER CONFIG MISSING! apiKey: ${apiKey.isEmpty ? 'EMPTY' : 'OK'}, cluster: ${cluster.isEmpty ? 'EMPTY' : 'OK'}");
+      _isConnecting = false;
+      return;
+    }
+
     await _disconnect();
 
     await pusher.init(
@@ -33,9 +45,19 @@ class PusherManager {
       cluster: cluster,
       onConnectionStateChange: _onConnectionStateChange,
       onEvent: _dispatchEvent,
-      onError: (msg, code, e) => printE("❌ Pusher Error: $msg"),
-      onSubscriptionError: (msg, e) => printE("⚠️ Sub Error: $msg"),
-      onSubscriptionSucceeded: (channel, data) => printX("✅ Subscribed: $channel"),
+      onError: (msg, code, e) {
+        printE("❌ Pusher Error [$platform]: $msg (code: $code)");
+        if (Platform.isIOS) {
+          printE("🍎 iOS Error Details: $e");
+        }
+      },
+      onSubscriptionError: (msg, e) {
+        printE("⚠️ Sub Error [$platform]: $msg");
+        if (Platform.isIOS) {
+          printE("🍎 iOS Subscription Error: $e");
+        }
+      },
+      onSubscriptionSucceeded: (channel, data) => printX("✅ Subscribed [$platform]: $channel"),
       onAuthorizer: onAuthorizer,
       onDecryptionFailure: (_, __) {},
       onMemberAdded: (_, __) {},
@@ -92,10 +114,21 @@ class PusherManager {
   }
 
   void _onConnectionStateChange(String current, String previous) {
-    printX("🔁 State: $previous → $current");
+    final platform = Platform.isIOS ? "iOS" : "Android";
+    printX("🔁 [$platform] State: $previous → $current");
+
+    // iOS-specific: Log additional connection states for debugging
+    if (Platform.isIOS && current.toLowerCase() == 'disconnected') {
+      printE("🍎 iOS Disconnected - Common causes: App backgrounded, Network change, Server timeout");
+    }
+
     if (current.toLowerCase() == 'disconnected' && previous.toLowerCase() == 'connected' && !_isConnecting) {
+      printX("⏳ [$platform] Will attempt reconnect in 3 seconds...");
       Future.delayed(const Duration(seconds: 3), () {
-        if (!isConnected() && !_isConnecting) _connect(_channelName);
+        if (!isConnected() && !_isConnecting) {
+          printX("🔄 [$platform] Attempting auto-reconnect...");
+          _connect(_channelName);
+        }
       });
     }
   }
@@ -127,12 +160,28 @@ class PusherManager {
   }
 
   Future<Map<String, dynamic>?> onAuthorizer(String channelName, String socketId, options) async {
+    final platform = Platform.isIOS ? "iOS" : "Android";
+    printX("🔐 [$platform] Authorizing: channel=$channelName, socketId=$socketId");
+
     try {
       String authUrl = "${UrlContainer.baseUrl}${UrlContainer.pusherAuthenticate}$socketId/$channelName";
+      printX("🔗 [$platform] Auth URL: $authUrl");
+
       ResponseModel response = await apiClient.request(authUrl, Method.postMethod, null, passHeader: true);
-      if (response.statusCode == 200) return response.responseJson;
+
+      printX("📨 [$platform] Auth Response: statusCode=${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        printX("✅ [$platform] Auth Success!");
+        return response.responseJson;
+      } else {
+        printE("❌ [$platform] Auth Failed: ${response.statusCode} - ${response.responseJson}");
+      }
     } catch (e) {
-      printE("Auth error: $e");
+      printE("❌ [$platform] Auth Exception: $e");
+      if (Platform.isIOS) {
+        printE("🍎 iOS Auth Error - Check: 1) SSL/TLS settings, 2) ATS config in Info.plist, 3) Network permissions");
+      }
     }
     return null;
   }
