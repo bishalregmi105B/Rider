@@ -74,11 +74,12 @@ class PusherManager {
       return;
     }
 
-    for (int i = 0; i < 3; i++) {
+    int maxRetries = 10;
+    for (int i = 0; i < maxRetries; i++) {
       try {
-        printX("🔌 Connecting... (${i + 1}/3)");
+        printX("🔌 Connecting... (${i + 1}/$maxRetries)");
         await pusher.connect();
-        await Future.delayed(const Duration(seconds: 2));
+        await Future.delayed(const Duration(seconds: 3));
 
         if (isConnected()) {
           printX("✅ Connected");
@@ -87,10 +88,10 @@ class PusherManager {
         }
       } catch (e) {
         printE("⚠️ Connect failed: $e");
-        if (i < 2) await Future.delayed(const Duration(seconds: 3));
+        if (i < maxRetries - 1) await Future.delayed(const Duration(seconds: 3));
       }
     }
-    printE("❌ Connection failed");
+    printE("❌ Connection failed after $maxRetries attempts");
   }
 
   Future<void> _subscribe(String channelName) async {

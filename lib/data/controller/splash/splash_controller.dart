@@ -11,8 +11,10 @@ import 'package:ovorideuser/core/utils/url_container.dart';
 import 'package:ovorideuser/data/controller/localization/localization_controller.dart';
 import 'package:ovorideuser/data/model/authorization/authorization_response_model.dart';
 import 'package:ovorideuser/data/model/general_setting/general_setting_response_model.dart';
+import 'package:ovorideuser/data/model/global/user/global_user_model.dart';
 import 'package:ovorideuser/data/model/global/response_model/response_model.dart';
 import 'package:ovorideuser/data/repo/auth/general_setting_repo.dart';
+import 'package:ovorideuser/core/route/route_middleware.dart';
 import 'package:ovorideuser/presentation/components/snack_bar/show_custom_snackbar.dart';
 
 class SplashController extends GetxController {
@@ -98,15 +100,10 @@ class SplashController extends GetxController {
                 if (responseData['status'] == 'success' && responseData['data'] != null) {
                   var userData = responseData['data']['user'];
                   if (userData != null) {
-                    // Check agreement_signed from API response
-                    String agreementSigned = userData['agreement_signed']?.toString() ?? '0';
-                    if (agreementSigned == '1') {
-                      // Agreement is signed on server - go to dashboard
-                      Get.offNamed(RouteHelper.dashboard);
-                    } else {
-                      // Agreement not signed - go to agreement screen
-                      Get.offNamed(RouteHelper.riderAgreementScreen);
-                    }
+                    GlobalUser user = GlobalUser.fromJson(userData);
+                    RouteMiddleware.checkNGotoNext(
+                      user: user,
+                    );
                     return;
                   }
                 }

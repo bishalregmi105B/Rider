@@ -15,8 +15,8 @@ class GlobalPusherController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-
     PusherManager().addListener(onEvent);
+    ensureConnection();
   }
 
   List<String> activeEventList = ["new_ride_created", "ride_end", "pick_up", "cash_payment_received", "new_bid", "driver_searching"];
@@ -25,12 +25,12 @@ class GlobalPusherController extends GetxController {
     try {
       printE("Global pusher event: ${event.eventName}");
       printE("Global pusher event: ${event.data}");
-      
+
       // Ignore pusher internal events
       if (event.eventName.startsWith('pusher:')) {
         return;
       }
-      
+
       if (event.data == null || event.eventName == "") return;
 
       final eventName = event.eventName.toLowerCase();
@@ -38,7 +38,7 @@ class GlobalPusherController extends GetxController {
       // Handle both string and map data types
       final dynamic rawData = event.data;
       final Map<String, dynamic> data;
-      
+
       if (rawData is String) {
         data = jsonDecode(rawData);
       } else if (rawData is Map) {
@@ -47,15 +47,15 @@ class GlobalPusherController extends GetxController {
         printE("Unexpected data type: ${rawData.runtimeType}");
         return;
       }
-      
+
       final model = PusherResponseModel.fromJson(data);
 
       if (activeEventList.contains(eventName) && !isRideDetailsPage()) {
         final rideId = eventName == "new_bid" ? model.data?.bid?.rideId : model.data?.ride?.id;
-        
+
         // Check if this is a scheduled ride (should not navigate immediately)
         final isScheduled = (model.data?.ride?.isScheduled == true || model.data?.ride?.isScheduled == 1);
-        
+
         if (rideId != null && isScheduled == false) {
           printX('📱 Navigating to ride details screen for ride: $rideId');
           Get.toNamed(RouteHelper.rideDetailsScreen, arguments: rideId);
