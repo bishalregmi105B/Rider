@@ -36,7 +36,7 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
   double driverRotation = 0.0;
 
   Map<PolylineId, Polyline> polylines = {};
-  
+
   // Track if we should show driver route
   bool _showDriverRoute = false;
 
@@ -45,7 +45,7 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
 
   // Animation controller for interpolating marker movement
   late final AnimationController _animationController;
-  
+
   // Track last marker count to reduce logging
   int? _lastMarkerCount;
 
@@ -54,11 +54,11 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
   List<NearbyDriverModel> nearbyDrivers = [];
   Uint8List? nearbyDriverIcon;
   Set<Marker> nearbyDriverMarkers = {};
-  
+
   // Sequential notification - searching driver marker
   Marker? searchingDriverMarker;
   LatLng? searchingDriverLocation;
-  
+
   // Track current driver being contacted
   String? currentSearchingDriverName;
   int? currentQueuePosition;
@@ -121,7 +121,7 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
     if (nearbyDrivers.isEmpty) {
       printX('🔄 fetchNearbyDrivers called (serviceId: $serviceId, zoneId: $zoneId)');
     }
-    
+
     if (!Get.isRegistered<AppLocationController>()) {
       printX('⚠️ AppLocationController not registered');
       return;
@@ -142,7 +142,7 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
     if (nearbyDrivers.isEmpty) {
       printX('📍 Fetching nearby drivers at (${position.latitude}, ${position.longitude})');
     }
-    
+
     try {
       final driverRepo = Get.find<DriverRepo>();
       final response = await driverRepo.getNearbyDrivers(
@@ -154,11 +154,11 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
       );
 
       printX('📡 API Response: statusCode=${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         final data = response.responseJson;
         printX('📦 Response data: ${data['status']}, drivers=${data['data']?['drivers']?.length ?? 0}');
-        
+
         if (data['status'] == 'success') {
           final driversData = data['data']['drivers'] as List;
           nearbyDrivers = driversData.map((json) => NearbyDriverModel.fromJson(json)).toList();
@@ -222,15 +222,15 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
   }) async {
     printX('🟢 Showing searching driver marker: $driverName at ${driverLocation.latitude}, ${driverLocation.longitude}');
     searchingDriverLocation = driverLocation;
-    
+
     // Store the current search information
     currentSearchingDriverName = driverName;
     currentQueuePosition = queuePosition;
     totalDriversInQueue = totalDrivers;
-    
+
     // Create green marker for driver being contacted
     final Uint8List? icon = await Helper.getBytesFromAsset(MyImages.mapDriverMarker, 100);
-    
+
     searchingDriverMarker = Marker(
       markerId: const MarkerId('searching_driver'),
       position: driverLocation,
@@ -248,14 +248,14 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
       ),
       zIndex: 1000, // Make sure it's on top
     );
-    
+
     // Move camera to show the driver
     if (mapController != null) {
       mapController!.animateCamera(
         CameraUpdate.newLatLngZoom(driverLocation, 14),
       );
     }
-    
+
     printX('✅ Showing searching driver marker at $driverLocation');
     update();
   }
@@ -289,7 +289,7 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
     // Animate marker from old to new position
     _animateMarker(latLng);
     getCurrentDriverAddress();
-    
+
     // Update driver route if needed
     if (_showDriverRoute) {
       _updateDriverRoute(isRunning);
@@ -477,29 +477,29 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
     if (mkDriverLatLng.latitude != 0 || mkDriverLatLng.longitude != 0) {
       // Build driver info for marker
       String markerTitle = driverName;
-      
+
       // Build snippet with ETA, vehicle, and address
       List<String> snippetParts = [];
-      
+
       // Add ETA if available
       if (driverETA.isNotEmpty && driverDistance.isNotEmpty) {
         snippetParts.add('⏱️ ETA: $driverETA • 📏 $driverDistance');
       } else if (driverETA.isNotEmpty) {
         snippetParts.add('⏱️ ETA: $driverETA');
       }
-      
+
       // Add vehicle info
       if (driverVehicle.isNotEmpty) {
         snippetParts.add(driverVehicle);
       }
-      
+
       // Add address
       if (driverAddress.isNotEmpty && driverAddress != 'Loading...') {
         snippetParts.add(driverAddress);
       }
-      
+
       String markerSnippet = snippetParts.join('\n');
-      
+
       markers.add(
         Marker(
           markerId: const MarkerId('driver_marker_id'),
@@ -609,7 +609,7 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
   String driverAddress = 'Loading...';
   String driverName = 'Your Driver';
   String driverVehicle = '';
-  
+
   // ETA (Estimated Time of Arrival) information
   String driverETA = '';
   int? driverETASeconds;
@@ -658,9 +658,9 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
     if (vehicleNumber != null && vehicleNumber.isNotEmpty && vehicleNumber != 'null') {
       vehicleParts.add('[$vehicleNumber]');
     }
-    
+
     driverVehicle = vehicleParts.join(' ');
-    
+
     printX('🚗 Driver info updated: $driverName, Vehicle: $driverVehicle');
     update();
   }
@@ -702,9 +702,7 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
       );
 
       if (result.points.isNotEmpty) {
-        List<LatLng> routeCoordinates = result.points
-            .map((point) => LatLng(point.latitude, point.longitude))
-            .toList();
+        List<LatLng> routeCoordinates = result.points.map((point) => LatLng(point.latitude, point.longitude)).toList();
 
         // Extract ETA information from the route result
         if (!isRunning && result.totalDurationValue != null) {
@@ -724,7 +722,7 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
 
         // Update polylines map
         polylines[polylineId] = driverPolyline;
-        
+
         // Remove old polyline if switching status
         if (isRunning) {
           polylines.remove(const PolylineId('driver_to_pickup'));
@@ -748,7 +746,7 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
       // Get duration in seconds
       if (result.totalDurationValue != null && result.totalDurationValue! > 0) {
         driverETASeconds = result.totalDurationValue;
-        
+
         // Format duration text
         int minutes = (driverETASeconds! / 60).round();
         if (minutes < 1) {
@@ -766,25 +764,25 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
             driverETA = '$hours ${hours == 1 ? "hr" : "hrs"} $remainingMinutes mins';
           }
         }
-        
+
         printX('⏱️ Driver ETA: $driverETA ($driverETASeconds seconds)');
       }
-      
+
       // Get distance
       if (result.totalDistanceValue != null && result.totalDistanceValue! > 0) {
         double distanceKm = result.totalDistanceValue! / 1000;
         final distanceUnit = Get.find<ApiClient>().getDistanceUnit();
-        
+
         if (distanceUnit.toLowerCase() == 'mile') {
           double distanceMiles = distanceKm * 0.621371;
           driverDistance = '${distanceMiles.toStringAsFixed(1)} mi';
         } else {
           driverDistance = '${distanceKm.toStringAsFixed(1)} km';
         }
-        
+
         printX('📏 Driver distance: $driverDistance');
       }
-      
+
       update();
     } catch (e) {
       printX('❌ Error extracting ETA: $e');
@@ -802,17 +800,17 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
         pickupLocation.latitude,
         pickupLocation.longitude,
       );
-      
+
       // Assume average city driving speed of 30 km/h (adjustable)
       const double averageSpeedKmh = 30.0;
       const double averageSpeedMs = averageSpeedKmh / 3.6; // Convert to m/s
-      
+
       // Calculate estimated time in seconds
       driverETASeconds = (distanceInMeters / averageSpeedMs).round();
-      
+
       // Add 20% buffer for traffic and stops
       driverETASeconds = (driverETASeconds! * 1.2).round();
-      
+
       // Format duration
       int minutes = (driverETASeconds! / 60).round();
       if (minutes < 1) {
@@ -830,21 +828,21 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
           driverETA = '$hours ${hours == 1 ? "hr" : "hrs"} $remainingMinutes mins';
         }
       }
-      
+
       // Format distance
       double distanceKm = distanceInMeters / 1000;
       final distanceUnit = Get.find<ApiClient>().getDistanceUnit();
-      
+
       if (distanceUnit.toLowerCase() == 'mile') {
         double distanceMiles = distanceKm * 0.621371;
         driverDistance = '${distanceMiles.toStringAsFixed(1)} mi';
       } else {
         driverDistance = '${distanceKm.toStringAsFixed(1)} km';
       }
-      
+
       printX('⏱️ Manual ETA calculated: $driverETA ($driverETASeconds seconds)');
       printX('📏 Manual distance calculated: $driverDistance');
-      
+
       update();
     } catch (e) {
       printX('❌ Error calculating manual ETA: $e');
@@ -855,16 +853,14 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
   /// Returns distance in meters
   double _calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371000; // Earth radius in meters
-    
+
     double dLat = _toRadians(lat2 - lat1);
     double dLon = _toRadians(lon2 - lon1);
-    
-    double a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_toRadians(lat1)) * cos(_toRadians(lat2)) *
-        sin(dLon / 2) * sin(dLon / 2);
-    
+
+    double a = sin(dLat / 2) * sin(dLat / 2) + cos(_toRadians(lat1)) * cos(_toRadians(lat2)) * sin(dLon / 2) * sin(dLon / 2);
+
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    
+
     return earthRadius * c;
   }
 
