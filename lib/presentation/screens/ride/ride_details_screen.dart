@@ -108,11 +108,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                           style: IconButton.styleFrom(backgroundColor: MyColor.colorWhite),
                           color: MyColor.colorBlack,
                           onPressed: () {
-                            if (Navigator.canPop(context)) {
-                              Get.back(result: true);
-                            } else {
-                              Get.offAllNamed(RouteHelper.dashboard);
-                            }
+                            toastification.dismissAll();
+                            // Always go to dashboard - ensures back works even
+                            // when there's no navigation history (e.g., from notification)
+                            Get.offAllNamed(RouteHelper.dashboard);
                           },
                           icon: const Icon(Icons.arrow_back_ios_new_rounded),
                         ),
