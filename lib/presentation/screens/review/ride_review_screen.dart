@@ -49,11 +49,18 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
       },
       child: Scaffold(
         backgroundColor: MyColor.screenBgColor,
+        resizeToAvoidBottomInset: true,
         appBar: CustomAppBar(title: MyStrings.reviewForDriver, isTitleCenter: true),
         body: GetBuilder<ReviewController>(
           builder: (controller) {
             return SingleChildScrollView(
-              padding: Dimensions.screenPaddingHV,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(
+                left: Dimensions.screenPaddingHV.left,
+                right: Dimensions.screenPaddingHV.right,
+                top: Dimensions.screenPaddingHV.top,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
               child: controller.isLoading
                   ? CustomLoader(isFullScreen: true)
                   : Column(
@@ -173,7 +180,7 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
                             onChanged: (v) {},
                             controller: controller.reviewMsgController,
                             hintText: MyStrings.reviewMsgHintText.tr,
-                            maxLines: 5,
+                            maxLines: 3,
                           ),
                         ),
                         const SizedBox(height: Dimensions.space30 + 2),
@@ -182,12 +189,6 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
                           textColor: MyColor.colorWhite,
                           isLoading: controller.isReviewLoading,
                           press: () {
-                            printX(controller.rating);
-                            printX(controller.reviewMsgController.text);
-                            if (controller.rating > 0 && controller.reviewMsgController.text.isNotEmpty) {
-                              controller.reviewRide();
-                            }
-
                             if (controller.rating > 0 && controller.reviewMsgController.text.isNotEmpty) {
                               controller.reviewRide();
                             } else {

@@ -20,11 +20,11 @@ class BackgroundPusherService {
   BackgroundPusherService._internal();
 
   static const String _portName = 'pusher_background_port';
-  
+
   final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
   ReceivePort? _receivePort;
   bool _isInitialized = false;
-  
+
   // Notification channel IDs
   static const String _driverAssignedChannelId = 'driver_assigned_channel';
   static const String _rideStatusChannelId = 'ride_status_channel';
@@ -36,18 +36,18 @@ class BackgroundPusherService {
   /// Initialize background service
   Future<void> initialize() async {
     if (_isInitialized) return;
-    
+
     printX('🚀 Initializing BackgroundPusherService for Rider');
-    
+
     // Initialize notifications
     await _initializeNotifications();
-    
+
     // Initialize background isolate for Pusher
     await _initializeBackgroundIsolate();
-    
+
     // Listen to Pusher events
     PusherManager().addListener(_handlePusherEvent);
-    
+
     _isInitialized = true;
     printX('✅ BackgroundPusherService initialized for Rider');
   }
@@ -105,14 +105,13 @@ class BackgroundPusherService {
     ];
 
     // Create channels
-    final androidPlugin = _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    
+    final androidPlugin = _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
     if (androidPlugin != null) {
       for (final channel in androidChannels) {
         await androidPlugin.createNotificationChannel(channel);
       }
-      
+
       // Request notification permissions for Android 13+
       await androidPlugin.requestNotificationsPermission();
     }
@@ -124,7 +123,7 @@ class BackgroundPusherService {
       requestBadgePermission: true,
       requestAlertPermission: true,
     );
-    
+
     const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
@@ -139,14 +138,14 @@ class BackgroundPusherService {
   /// Initialize background isolate for persistent Pusher connection
   Future<void> _initializeBackgroundIsolate() async {
     _receivePort = ReceivePort();
-    
+
     // Register port for inter-isolate communication
     IsolateNameServer.removePortNameMapping(_portName);
     IsolateNameServer.registerPortWithName(
       _receivePort!.sendPort,
       _portName,
     );
-    
+
     // Listen to messages from background isolate
     _receivePort!.listen((dynamic data) {
       if (data is Map<String, dynamic>) {
@@ -160,12 +159,12 @@ class BackgroundPusherService {
     try {
       final eventName = event.eventName.toLowerCase();
       printX('📩 BackgroundPusher Rider: $eventName');
-      
+
       // Ignore pusher internal events
       if (eventName.startsWith('pusher:')) {
         return;
       }
-      
+
       // Parse event data
       Map<String, dynamic> data = {};
       if (event.data != null) {
@@ -175,23 +174,22 @@ class BackgroundPusherService {
           data = Map<String, dynamic>.from(event.data);
         }
       }
-      
+
       final model = PusherResponseModel.fromJson(data);
-      
-      // Determine if app is in background
+
+      // Determine app lifecycle state
       final appState = WidgetsBinding.instance.lifecycleState;
-      final isBackground = appState != AppLifecycleState.resumed;
-      
-      if (isBackground) {
-        printX('📱 App in background, showing notification');
-        _showNotificationForEvent(eventName, model);
-      }
-      
-      // Handle critical events that need immediate attention
-      if (_isCriticalEvent(eventName)) {
+      final isBackground = appState == null || appState != AppLifecycleState.resumed;
+
+      // Always show system notification for all events
+      // This ensures the rider sees notifications whether app is foreground or background
+      printX('📱 App state: $appState (isBackground: $isBackground) — showing notification');
+      _showNotificationForEvent(eventName, model);
+
+      // Handle critical events that need immediate attention (bring app to foreground)
+      if (isBackground && _isCriticalEvent(eventName)) {
         _handleCriticalEvent(eventName, model);
       }
-      
     } catch (e) {
       printE('Error handling Pusher event: $e');
     }
@@ -201,7 +199,7 @@ class BackgroundPusherService {
   void _processBackgroundEvent(Map<String, dynamic> data) {
     final eventName = data['event'] as String?;
     final eventData = data['data'] as Map<String, dynamic>?;
-    
+
     if (eventName != null && eventData != null) {
       final model = PusherResponseModel.fromJson(eventData);
       _showNotificationForEvent(eventName, model);
@@ -210,7 +208,7 @@ class BackgroundPusherService {
 
   /// Show notification based on event type
   Future<void> _showNotificationForEvent(
-    String eventName, 
+    String eventName,
     PusherResponseModel model,
   ) async {
     String title = '';
@@ -222,122 +220,143 @@ class BackgroundPusherService {
     switch (eventName) {
       case 'new_ride_created':
         final ride = model.data?.ride;
+        title = '🚗 Ride Created!';
         if (ride != null) {
-          title = '🚗 Ride Created!';
           body = 'Your ride request has been created\n'
-                'From: ${ride.pickupLocation ?? "Unknown"}\n'
-                'To: ${ride.destination ?? "Unknown"}';
+              'From: ${ride.pickupLocation ?? "Pickup"}\n'
+              'To: ${ride.destination ?? "Destination"}';
           channelId = _rideStatusChannelId;
           payload = jsonEncode({
             'event': 'new_ride_created',
             'ride_id': ride.id,
           });
+        } else {
+          body = 'Your ride request has been created.';
+          channelId = _rideStatusChannelId;
         }
         break;
-        
+
       case 'driver_searching':
-        final ride = model.data?.ride;
-        if (ride != null) {
-          title = '🔍 Driver Found!';
-          body = 'A driver has been assigned to your ride\n'
-                'Driver will arrive soon';
-          channelId = _driverAssignedChannelId;
-          payload = jsonEncode({
-            'event': 'driver_searching',
-            'ride_id': ride.id,
-          });
-          
-          // High priority notification with actions
-          details = NotificationDetails(
-            android: AndroidNotificationDetails(
-              channelId,
-              'Driver Assigned',
-              channelDescription: 'Driver assignment notifications',
-              importance: Importance.max,
-              priority: Priority.max,
-              fullScreenIntent: true,
-              category: AndroidNotificationCategory.call,
-              autoCancel: false,
-              ongoing: true,
-              actions: [
-                AndroidNotificationAction(
-                  'view',
-                  'View Details',
-                  titleColor: Colors.blue,
-                  showsUserInterface: true,
-                ),
-                AndroidNotificationAction(
-                  'contact',
-                  'Contact Driver',
-                  titleColor: Colors.green,
-                  showsUserInterface: true,
-                ),
-              ],
-            ),
-            iOS: const DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-              interruptionLevel: InterruptionLevel.critical,
-            ),
-          );
+        final currentDriver = model.data?.currentDriver;
+        title = '🔍 Driver Search Update';
+        if (currentDriver != null) {
+          final driverName = currentDriver['name']?.toString() ?? 'A driver';
+          body = '$driverName is being contacted for your ride';
+        } else {
+          body = 'Searching for available drivers in your area...';
         }
+        channelId = _driverAssignedChannelId;
+        payload = jsonEncode({
+          'event': 'driver_searching',
+          'ride_id': model.data?.ride?.id,
+        });
+
+        // High priority notification
+        details = NotificationDetails(
+          android: AndroidNotificationDetails(
+            channelId,
+            'Driver Assigned',
+            channelDescription: 'Driver assignment notifications',
+            importance: Importance.max,
+            priority: Priority.max,
+            fullScreenIntent: true,
+            category: AndroidNotificationCategory.call,
+            autoCancel: false,
+            ongoing: true,
+            actions: [
+              AndroidNotificationAction(
+                'view',
+                'View Details',
+                titleColor: Colors.blue,
+                showsUserInterface: true,
+              ),
+              AndroidNotificationAction(
+                'contact',
+                'Contact Driver',
+                titleColor: Colors.green,
+                showsUserInterface: true,
+              ),
+            ],
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+            interruptionLevel: InterruptionLevel.critical,
+          ),
+        );
         break;
 
       case 'new_bid':
         final bid = model.data?.bid;
+        title = '💰 New Bid Received!';
         if (bid != null) {
-          title = '💰 New Bid Received!';
-          body = 'Driver bid: \$${StringConverter.formatNumber(bid.bidAmount ?? '0')}\n'
-                'Tap to view and accept';
-          channelId = _bidChannelId;
+          body = 'Driver bid: ${StringConverter.formatNumber(bid.bidAmount ?? '0')}\n'
+              'Tap to view and accept';
           payload = jsonEncode({
             'event': 'new_bid',
             'ride_id': bid.rideId,
           });
+        } else {
+          body = 'A driver has placed a bid on your ride. Tap to view.';
         }
+        channelId = _bidChannelId;
         break;
 
       case 'bid_accept':
         final ride = model.data?.ride;
+        title = '✅ Ride Confirmed!';
         if (ride != null) {
-          title = '✅ Ride Confirmed!';
           body = 'Driver has accepted your ride\n'
-                'They are on their way';
-          channelId = _driverAssignedChannelId;
+              'They are on their way';
           payload = jsonEncode({
             'event': 'bid_accept',
             'ride_id': ride.id,
           });
+        } else {
+          body = 'A driver has accepted your ride!';
         }
+        channelId = _driverAssignedChannelId;
         break;
 
       case 'pick_up':
         final ride = model.data?.ride;
+        title = '🎯 Driver Arrived!';
         if (ride != null) {
-          title = '🎯 Driver Arrived!';
           body = 'Your driver has arrived at the pickup location\n'
-                'Please board the vehicle';
-          channelId = _criticalChannelId;
+              'Please board the vehicle';
           payload = jsonEncode({
             'event': 'pick_up',
             'ride_id': ride.id,
           });
+        } else {
+          body = 'Your driver has arrived. Please board the vehicle.';
         }
+        channelId = _criticalChannelId;
         break;
 
       case 'ride_end':
         final ride = model.data?.ride;
+        title = '🏁 Ride Completed!';
         if (ride != null) {
-          title = '🏁 Ride Completed!';
           body = 'Your ride has been completed\n'
-                'Please rate your experience';
-          channelId = _rideStatusChannelId;
+              'Please rate your experience';
           payload = jsonEncode({
             'event': 'ride_end',
             'ride_id': ride.id,
           });
+        } else {
+          body = 'Your ride has been completed. Please rate your experience.';
         }
+        channelId = _rideStatusChannelId;
+        break;
+
+      case 'ride_canceled':
+        final canceledBy = model.data?.canceledBy ?? 'unknown';
+        final reason = model.data?.cancelReason ?? 'No reason provided';
+        title = '🚫 Ride Canceled';
+        body = 'Ride canceled by $canceledBy\nReason: $reason';
+        channelId = _criticalChannelId;
         break;
 
       case 'cash_payment_received':
@@ -348,11 +367,13 @@ class BackgroundPusherService {
 
       case 'message_received':
         final message = model.data?.message;
+        title = '💬 New Message';
         if (message != null) {
-          title = '💬 New Message';
           body = message.message ?? 'You have a new message';
-          channelId = _generalChannelId;
+        } else {
+          body = 'You have a new message from your driver.';
         }
+        channelId = _generalChannelId;
         break;
 
       default:
@@ -422,7 +443,7 @@ class BackgroundPusherService {
     PusherResponseModel model,
   ) async {
     final appState = WidgetsBinding.instance.lifecycleState;
-    
+
     // Only show call screen if app is in background/inactive
     if (appState != AppLifecycleState.resumed) {
       if (eventName == 'driver_searching' || eventName == 'bid_accept') {
@@ -436,7 +457,7 @@ class BackgroundPusherService {
   /// Show driver assigned screen (like WhatsApp call)
   Future<void> _showDriverAssignedScreen(dynamic ride) async {
     if (ride == null) return;
-    
+
     Get.toNamed(
       RouteHelper.driverAssignedScreen,
       arguments: ride,
@@ -446,7 +467,7 @@ class BackgroundPusherService {
   /// Show driver arrived screen
   Future<void> _showDriverArrivedScreen(dynamic ride) async {
     if (ride == null) return;
-    
+
     Get.toNamed(
       RouteHelper.driverArrivedScreen,
       arguments: ride,
@@ -460,7 +481,7 @@ class BackgroundPusherService {
         final data = jsonDecode(response.payload!);
         // final event = data['event'] as String?;  // Currently unused
         final rideId = data['ride_id'] as String?;
-        
+
         if (rideId != null) {
           // Navigate based on event type
           Get.toNamed(RouteHelper.rideDetailsScreen, arguments: rideId);
@@ -484,33 +505,33 @@ class BackgroundPusherService {
 @pragma('vm:entry-point')
 void backgroundPusherIsolate() async {
   printX('🎯 Background Pusher Isolate started for Rider');
-  
+
   // Initialize Flutter bindings
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Get shared preferences
   final prefs = await SharedPreferences.getInstance();
   final userId = prefs.getString(SharedPreferenceHelper.userIdKey) ?? '';
-  
+
   if (userId.isEmpty) {
     printX('⚠️ No user ID, exiting background isolate');
     return;
   }
-  
+
   // Initialize Pusher in background
   final pusher = PusherChannelsFlutter.getInstance();
-  
+
   try {
     // Get Pusher config from storage
     final pusherConfigJson = prefs.getString(
       SharedPreferenceHelper.pusherConfigSettingKey,
     );
-    
+
     if (pusherConfigJson != null) {
       final config = jsonDecode(pusherConfigJson);
       final apiKey = config['app_key'];
       final cluster = config['cluster'];
-      
+
       if (apiKey != null && cluster != null) {
         // Initialize Pusher
         await pusher.init(
@@ -521,7 +542,7 @@ void backgroundPusherIsolate() async {
             final sendPort = IsolateNameServer.lookupPortByName(
               BackgroundPusherService._portName,
             );
-            
+
             if (sendPort != null) {
               sendPort.send({
                 'event': event.eventName,
@@ -530,19 +551,19 @@ void backgroundPusherIsolate() async {
             }
           },
         );
-        
+
         // Connect and subscribe
         await pusher.connect();
         await pusher.subscribe(
           channelName: 'private-rider-user-$userId',
         );
-        
+
         printX('✅ Background Pusher connected for rider');
-        
+
         // Keep isolate alive
         while (true) {
           await Future.delayed(const Duration(seconds: 30));
-          
+
           // Check if still connected
           if (pusher.connectionState.toLowerCase() != 'connected') {
             printX('⚠️ Pusher disconnected, reconnecting...');
