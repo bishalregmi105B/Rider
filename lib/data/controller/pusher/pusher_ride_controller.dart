@@ -266,14 +266,16 @@ class PusherRideController extends GetxController {
   }
 
   void _handleDriverSearching(PusherResponseModel enventResponse) {
-    printX('🔍 Driver being contacted for ride');
+    printX('🔍 Driver searching event received');
 
     try {
       final currentDriver = enventResponse.data?.currentDriver;
       final queuePosition = enventResponse.data?.queuePosition ?? 1;
       final totalDrivers = enventResponse.data?.totalDrivers ?? 1;
+      final message = enventResponse.data?.searchMessage ?? '';
 
       if (currentDriver != null) {
+        // A specific driver is being contacted
         final lat = StringConverter.formatDouble(currentDriver['latitude']?.toString() ?? '0', precision: 10);
         final lng = StringConverter.formatDouble(currentDriver['longitude']?.toString() ?? '0', precision: 10);
         final driverName = currentDriver['name']?.toString() ?? 'Driver';
@@ -284,10 +286,20 @@ class PusherRideController extends GetxController {
 
           printX('✅ Showing driver marker at ($lat, $lng) - Driver $queuePosition of $totalDrivers');
         }
-      }
 
-      // Show notification to rider
-      Get.snackbar('🔍 Searching for Driver', 'Contacting driver $queuePosition of $totalDrivers nearby...', snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 3), backgroundColor: Get.theme.colorScheme.primaryContainer, colorText: Get.theme.colorScheme.onPrimaryContainer);
+        // Show notification to rider
+        Get.snackbar('🔍 Searching for Driver', 'Contacting driver $queuePosition of $totalDrivers nearby...', snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 3), backgroundColor: Get.theme.colorScheme.primaryContainer, colorText: Get.theme.colorScheme.onPrimaryContainer);
+      } else {
+        // No specific driver — queue exhausted, searching for new drivers
+        // Clear the old driver marker so rider doesn't see stale info
+        rideDetailsController.mapController.clearSearchingDriverMarker();
+
+        printX('🔄 Queue refreshing — cleared old driver marker');
+
+        // Show appropriate message
+        final displayMsg = message.isNotEmpty ? message : 'Looking for more drivers in your area...';
+        Get.snackbar('🔄 Searching for Drivers', displayMsg, snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 4), backgroundColor: Get.theme.colorScheme.primaryContainer, colorText: Get.theme.colorScheme.onPrimaryContainer);
+      }
     } catch (e) {
       printX('❌ Error handling driver searching event: $e');
 

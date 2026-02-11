@@ -53,12 +53,14 @@ class EventData {
   RideModel? ride;
   AppService? service;
   BidModel? bid;
-  
+
   // Sequential notification fields
   Map<String, dynamic>? currentDriver;
   int? queuePosition;
   int? totalDrivers;
-  
+  String? searchStatus;
+  String? searchMessage;
+
   EventData({
     this.remark,
     this.userId,
@@ -76,6 +78,8 @@ class EventData {
     this.currentDriver,
     this.queuePosition,
     this.totalDrivers,
+    this.searchStatus,
+    this.searchMessage,
   });
 
   EventData copyWith({
@@ -129,6 +133,8 @@ class EventData {
       currentDriver: json["current_driver"] != null ? (json["current_driver"] is Map ? Map<String, dynamic>.from(json["current_driver"]) : null) : null,
       queuePosition: json["queue_position"] != null ? (json["queue_position"] is int ? json["queue_position"] : int.tryParse(json["queue_position"].toString())) : null,
       totalDrivers: json["total_drivers"] != null ? (json["total_drivers"] is int ? json["total_drivers"] : int.tryParse(json["total_drivers"].toString())) : null,
+      searchStatus: json["status"]?.toString() ?? '',
+      searchMessage: json["message"]?.toString() ?? '',
     );
   }
 }
