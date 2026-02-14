@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import 'package:ovorideuser/core/helper/string_format_helper.dart';
 import 'package:ovorideuser/core/route/route.dart';
@@ -14,6 +15,7 @@ import 'package:ovorideuser/data/controller/map/ride_map_controller.dart';
 import 'package:ovorideuser/data/controller/ride/ride_details/ride_details_controller.dart';
 import 'package:ovorideuser/data/controller/ride/ride_meassage/ride_meassage_controller.dart';
 import 'package:ovorideuser/data/model/global/app/ride_model.dart';
+import 'package:ovorideuser/data/model/global/pusher/pusher_event_response_model.dart';
 import 'package:ovorideuser/data/services/api_client.dart';
 import 'package:ovorideuser/data/services/download_service.dart';
 import 'package:ovorideuser/data/services/local_storage_service.dart';
@@ -128,102 +130,61 @@ class RideDetailsBottomSheetWidget extends StatelessWidget {
                       spaceDown(Dimensions.space10),
                       GetBuilder<RideMapController>(
                         builder: (mapController) {
-                          // Check if we're actively contacting a specific driver
-                          if (mapController.currentQueuePosition != null &&
-                              mapController.totalDriversInQueue != null) {
+                          // Check if we have notified driver counts from broadcast system
+                          if (mapController.notifiedDriverCount > 0) {
+                            final totalContacting = mapController.notifiedDriverCount;
+                            final rejected = mapController.rejectedDriverCount;
+                            final driverList = mapController.searchingDriverInfoList;
+                            final imgPath = mapController.searchingDriverImagePath;
+
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: Dimensions.space15,
-                                    vertical: Dimensions.space10,
+                                // ── Stacked circular driver avatars ──
+                                _buildDriverAvatarStack(
+                                  drivers: driverList,
+                                  totalCount: totalContacting,
+                                  imagePath: imgPath,
+                                ),
+                                spaceDown(Dimensions.space12),
+                                // ── Contacting text ──
+                                Text(
+                                  'Contacting $totalContacting driver${totalContacting > 1 ? 's' : ''} nearby',
+                                  style: boldDefault.copyWith(
+                                    color: MyColor.getPrimaryColor(),
+                                    fontSize: Dimensions.fontLarge,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: MyColor.primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(Dimensions.mediumRadius),
-                                    border: Border.all(
-                                      color: MyColor.primaryColor.withOpacity(0.3),
-                                      width: 1,
+                                ),
+                                if (rejected > 0) ...[
+                                  spaceDown(Dimensions.space5),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: Dimensions.space10,
+                                      vertical: Dimensions.space3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: MyColor.colorGrey.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(Dimensions.space15),
+                                    ),
+                                    child: Text(
+                                      '$rejected unavailable',
+                                      style: regularSmall.copyWith(
+                                        color: MyColor.getBodyTextColor().withOpacity(0.6),
+                                      ),
                                     ),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      RippleAnimation(
-                                        repeat: true,
-                                        color: MyColor.primaryColor,
-                                        minRadius: 12,
-                                        ripplesCount: 3,
-                                        child: Container(
-                                          padding: EdgeInsets.all(Dimensions.space5),
-                                          decoration: BoxDecoration(
-                                            color: MyColor.primaryColor.withOpacity(0.2),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            Icons.phone_in_talk,
-                                            color: MyColor.primaryColor,
-                                            size: Dimensions.space20,
-                                          ),
-                                        ),
-                                      ),
-                                      spaceSide(Dimensions.space12),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          HeaderText(
-                                            text: 'Contacting Driver ${mapController.currentQueuePosition} of ${mapController.totalDriversInQueue}',
-                                            style: boldDefault.copyWith(
-                                              color: MyColor.getPrimaryColor(),
-                                            ),
-                                          ),
-                                          if (mapController.currentSearchingDriverName != null)
-                                            SmallText(
-                                              text: mapController.currentSearchingDriverName!,
-                                              textStyle: regularSmall.copyWith(
-                                                color: MyColor.getBodyTextColor(),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
+                                ],
+                                spaceDown(Dimensions.space8),
+                                Text(
+                                  'Waiting for a driver to accept your ride',
+                                  style: regularDefault.copyWith(
+                                    color: MyColor.getBodyTextColor().withOpacity(0.7),
                                   ),
-                                ).animate().fadeIn(duration: Duration(milliseconds: 300)),
-                                spaceDown(Dimensions.space10),
-                                // Progress indicator for queue position
-                                if (mapController.currentQueuePosition != null && 
-                                    mapController.totalDriversInQueue != null)
-                                  Column(
-                                    children: [
-                                      Container(
-                                        height: 4,
-                                        margin: EdgeInsets.symmetric(vertical: Dimensions.space8),
-                                        child: LinearProgressIndicator(
-                                          value: mapController.currentQueuePosition! / mapController.totalDriversInQueue!,
-                                          backgroundColor: MyColor.neutral200,
-                                          valueColor: AlwaysStoppedAnimation<Color>(MyColor.primaryColor),
-                                        ),
-                                      ),
-                                      SmallText(
-                                        text: 'If no response, next driver will be contacted',
-                                        textStyle: regularSmall.copyWith(
-                                          color: MyColor.getBodyTextColor().withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                else
-                                  SmallText(
-                                    text: 'We\'re contacting the nearest available driver',
-                                    textStyle: regularDefault.copyWith(
-                                      color: MyColor.getBodyTextColor(),
-                                    ),
-                                  ),
+                                ),
                               ],
-                            );
+                            ).animate().fadeIn(duration: Duration(milliseconds: 300));
                           }
-                          
+
                           // Default searching message
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -366,7 +327,7 @@ class RideDetailsBottomSheetWidget extends StatelessWidget {
                       ),
                     ),
                     spaceDown(Dimensions.space15),
-                    
+
                     // ETA Display Card
                     GetBuilder<RideMapController>(
                       builder: (mapController) {
@@ -429,7 +390,7 @@ class RideDetailsBottomSheetWidget extends StatelessWidget {
                         return const SizedBox.shrink();
                       },
                     ),
-                    
+
                     spaceDown(Dimensions.space15),
                     //Security code
 
@@ -542,8 +503,7 @@ class RideDetailsBottomSheetWidget extends StatelessWidget {
                   ],
 
                   //Ready For payment (only show if payment system is enabled)
-                  if (Get.find<ApiClient>().isPaymentSystemEnabled() && 
-                      ride.status == AppStatus.RIDE_PAYMENT_REQUESTED) ...[
+                  if (Get.find<ApiClient>().isPaymentSystemEnabled() && ride.status == AppStatus.RIDE_PAYMENT_REQUESTED) ...[
                     spaceDown(Dimensions.space70),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -797,6 +757,162 @@ class RideDetailsBottomSheetWidget extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  /// Builds a horizontal stack of circular driver avatars with a "+N" overflow chip.
+  /// Shows up to [maxVisible] driver photos, then a "+remaining" circle.
+  Widget _buildDriverAvatarStack({
+    required List<SearchingDriverInfo> drivers,
+    required int totalCount,
+    required String imagePath,
+    int maxVisible = 4,
+  }) {
+    // Generate avatar colors based on driver initials (deterministic)
+    const avatarColors = [
+      Color(0xFF4CAF50),
+      Color(0xFF2196F3),
+      Color(0xFFFF9800),
+      Color(0xFF9C27B0),
+      Color(0xFFE91E63),
+      Color(0xFF00BCD4),
+      Color(0xFF795548),
+      Color(0xFFFF5722),
+    ];
+
+    final double avatarSize = 46;
+    final double overlap = 14;
+    final int showCount = drivers.length > maxVisible ? maxVisible : drivers.length;
+    final int remaining = totalCount - showCount;
+    final bool hasOverflow = remaining > 0;
+    final int totalWidgets = showCount + (hasOverflow ? 1 : 0);
+
+    // Calculate total width for centering
+    final double totalWidth = totalWidgets > 0 ? avatarSize + (totalWidgets - 1) * (avatarSize - overlap) : avatarSize;
+
+    final baseUrl = UrlContainer.domainUrl;
+
+    // Wrap with Semantics + ExcludeSemantics to prevent Flutter engine
+    // AccessibilityBridge crash from deeply nested Stack > Positioned > ClipOval tree.
+    return Semantics(
+      label: '$totalCount drivers being contacted',
+      child: ExcludeSemantics(
+        child: SizedBox(
+          height: avatarSize + 6,
+          width: totalWidth + 4,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Driver avatar circles
+              for (int i = 0; i < showCount; i++)
+                Positioned(
+                  left: i * (avatarSize - overlap),
+                  child: _buildSingleAvatar(
+                    driver: drivers[i],
+                    size: avatarSize,
+                    color: avatarColors[i % avatarColors.length],
+                    imageUrl: drivers[i].image.isNotEmpty ? '$baseUrl/$imagePath/${drivers[i].image}' : '',
+                  ),
+                ),
+
+              // "+N" overflow circle
+              if (hasOverflow)
+                Positioned(
+                  left: showCount * (avatarSize - overlap),
+                  child: Container(
+                    width: avatarSize,
+                    height: avatarSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: MyColor.getPrimaryColor(),
+                      border: Border.all(color: Colors.white, width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: MyColor.getPrimaryColor().withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        '+$remaining',
+                        style: boldDefault.copyWith(
+                          color: Colors.white,
+                          fontSize: remaining > 99 ? Dimensions.fontSmall : Dimensions.fontMedium,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds a single circular avatar with network image or initials fallback.
+  Widget _buildSingleAvatar({
+    required SearchingDriverInfo driver,
+    required double size,
+    required Color color,
+    required String imageUrl,
+  }) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withOpacity(0.15),
+        border: Border.all(color: Colors.white, width: 2.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: imageUrl.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+                width: size,
+                height: size,
+                placeholder: (context, url) => _initialsWidget(driver, size, color),
+                errorWidget: (context, url, error) => _initialsWidget(driver, size, color),
+              )
+            : _initialsWidget(driver, size, color),
+      ),
+    );
+  }
+
+  /// Fallback widget showing driver initials when no image is available.
+  Widget _initialsWidget(SearchingDriverInfo driver, double size, Color color) {
+    final initials = driver.initials;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [color, color.withOpacity(0.7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initials.isNotEmpty ? initials : '?',
+          style: boldDefault.copyWith(
+            color: Colors.white,
+            fontSize: Dimensions.fontMedium,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
     );
   }
 

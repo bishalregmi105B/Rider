@@ -237,11 +237,14 @@ class BackgroundPusherService {
         break;
 
       case 'driver_searching':
-        final currentDriver = model.data?.currentDriver;
+        final notifiedCount = model.data?.notifiedCount ?? 0;
+        final rejectedCount = model.data?.rejectedCount ?? 0;
         title = '🔍 Driver Search Update';
-        if (currentDriver != null) {
-          final driverName = currentDriver['name']?.toString() ?? 'A driver';
-          body = '$driverName is being contacted for your ride';
+        if (notifiedCount > 0) {
+          body = '$notifiedCount driver${notifiedCount > 1 ? 's are' : ' is'} being contacted for your ride';
+          if (rejectedCount > 0) {
+            body += '\n$rejectedCount driver${rejectedCount > 1 ? 's' : ''} unavailable';
+          }
         } else {
           body = 'Searching for available drivers in your area...';
         }

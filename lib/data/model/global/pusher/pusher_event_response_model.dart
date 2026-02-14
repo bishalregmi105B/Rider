@@ -54,12 +54,15 @@ class EventData {
   AppService? service;
   BidModel? bid;
 
-  // Sequential notification fields
-  Map<String, dynamic>? currentDriver;
-  int? queuePosition;
-  int? totalDrivers;
+  // Broadcast notification fields (driver count-based)
+  int? notifiedCount;
+  int? rejectedCount;
   String? searchStatus;
   String? searchMessage;
+
+  // Driver avatar info for searching UI
+  List<SearchingDriverInfo>? searchingDrivers;
+  String? driverImagePath;
 
   EventData({
     this.remark,
@@ -75,11 +78,12 @@ class EventData {
     this.ride,
     this.service,
     this.bid,
-    this.currentDriver,
-    this.queuePosition,
-    this.totalDrivers,
+    this.notifiedCount,
+    this.rejectedCount,
     this.searchStatus,
     this.searchMessage,
+    this.searchingDrivers,
+    this.driverImagePath,
   });
 
   EventData copyWith({
@@ -122,7 +126,7 @@ class EventData {
       driverId: json["driverId"]?.toString() ?? json["driver_id"]?.toString() ?? '',
       rideId: json["rideId"]?.toString() ?? json["ride_id"]?.toString() ?? '',
       driverTotalRide: json["driver_total_ride"]?.toString() ?? '',
-      message: json["message"] != null ? RideMessage.fromJson(json["message"]) : null,
+      message: json["message"] != null && json["message"] is Map ? RideMessage.fromJson(json["message"]) : null,
       driverLatitude: json["driver_latitude"]?.toString() ?? json["latitude"]?.toString() ?? '',
       driverLongitude: json["driver_longitude"]?.toString() ?? json["longitude"]?.toString() ?? '',
       canceledBy: json["canceled_by"]?.toString() ?? '',
@@ -130,11 +134,42 @@ class EventData {
       ride: json["ride"] != null ? (json["ride"] is String ? RideModel.fromJson(jsonDecode(json["ride"])) : RideModel.fromJson(json["ride"])) : null,
       service: json["service"] != null ? AppService.fromJson(json["service"]) : null,
       bid: json["bid"] != null ? BidModel.fromJson(json["bid"]) : null,
-      currentDriver: json["current_driver"] != null ? (json["current_driver"] is Map ? Map<String, dynamic>.from(json["current_driver"]) : null) : null,
-      queuePosition: json["queue_position"] != null ? (json["queue_position"] is int ? json["queue_position"] : int.tryParse(json["queue_position"].toString())) : null,
-      totalDrivers: json["total_drivers"] != null ? (json["total_drivers"] is int ? json["total_drivers"] : int.tryParse(json["total_drivers"].toString())) : null,
+      notifiedCount: json["notified_count"] != null ? (json["notified_count"] is int ? json["notified_count"] : int.tryParse(json["notified_count"].toString())) : null,
+      rejectedCount: json["rejected_count"] != null ? (json["rejected_count"] is int ? json["rejected_count"] : int.tryParse(json["rejected_count"].toString())) : null,
       searchStatus: json["status"]?.toString() ?? '',
-      searchMessage: json["message"]?.toString() ?? '',
+      searchMessage: json["message"] is String ? json["message"].toString() : '',
+      searchingDrivers: json["drivers"] != null && json["drivers"] is List ? (json["drivers"] as List).map((d) => SearchingDriverInfo.fromJson(d)).toList() : null,
+      driverImagePath: json["driver_image_path"]?.toString(),
     );
+  }
+}
+
+/// Lightweight driver info sent with DRIVER_SEARCHING events
+class SearchingDriverInfo {
+  final int? id;
+  final String firstname;
+  final String lastname;
+  final String image;
+
+  SearchingDriverInfo({
+    this.id,
+    this.firstname = '',
+    this.lastname = '',
+    this.image = '',
+  });
+
+  factory SearchingDriverInfo.fromJson(Map<String, dynamic> json) {
+    return SearchingDriverInfo(
+      id: json['id'] != null ? int.tryParse(json['id'].toString()) : null,
+      firstname: json['firstname']?.toString() ?? '',
+      lastname: json['lastname']?.toString() ?? '',
+      image: json['image']?.toString() ?? '',
+    );
+  }
+
+  String get initials {
+    final f = firstname.isNotEmpty ? firstname[0].toUpperCase() : '';
+    final l = lastname.isNotEmpty ? lastname[0].toUpperCase() : '';
+    return '$f$l';
   }
 }

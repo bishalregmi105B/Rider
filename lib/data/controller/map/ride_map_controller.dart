@@ -7,6 +7,7 @@ import 'package:ovorideuser/core/utils/app_status.dart';
 import 'package:ovorideuser/core/utils/my_icons.dart';
 import 'package:ovorideuser/data/controller/location/app_location_controller.dart';
 import 'package:ovorideuser/data/controller/ride/ride_details/ride_details_controller.dart';
+import 'package:ovorideuser/data/model/global/pusher/pusher_event_response_model.dart';
 import 'package:ovorideuser/data/model/driver/nearby_driver_model.dart';
 import 'package:ovorideuser/data/repo/driver/driver_repo.dart';
 import 'package:ovorideuser/presentation/packages/flutter_polyline_points/flutter_polyline_points.dart';
@@ -59,10 +60,13 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
   Marker? searchingDriverMarker;
   LatLng? searchingDriverLocation;
 
-  // Track current driver being contacted
-  String? currentSearchingDriverName;
-  int? currentQueuePosition;
-  int? totalDriversInQueue;
+  // Broadcast notification - track driver counts
+  int notifiedDriverCount = 0;
+  int rejectedDriverCount = 0;
+
+  // Driver avatar info for searching UI
+  List<SearchingDriverInfo> searchingDriverInfoList = [];
+  String searchingDriverImagePath = '';
 
   @override
   void onInit() {
@@ -213,62 +217,35 @@ class RideMapController extends GetxController with GetSingleTickerProviderState
     update();
   }
 
-  /// Show marker for driver currently being contacted (sequential notification)
-  Future<void> showSearchingDriverMarker({
-    required LatLng driverLocation,
-    required String driverName,
-    required int queuePosition,
-    required int totalDrivers,
-  }) async {
-    printX('🟢 Showing searching driver marker: $driverName at ${driverLocation.latitude}, ${driverLocation.longitude}');
-    searchingDriverLocation = driverLocation;
-
-    // Store the current search information
-    currentSearchingDriverName = driverName;
-    currentQueuePosition = queuePosition;
-    totalDriversInQueue = totalDrivers;
-
-    // Create green marker for driver being contacted
-    final Uint8List? icon = await Helper.getBytesFromAsset(MyImages.mapDriverMarker, 100);
-
-    searchingDriverMarker = Marker(
-      markerId: const MarkerId('searching_driver'),
-      position: driverLocation,
-      icon: icon != null
-          ? BitmapDescriptor.bytes(
-              icon,
-              width: 30,
-              height: 45,
-              bitmapScaling: MapBitmapScaling.auto,
-            )
-          : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-      infoWindow: InfoWindow(
-        title: '🔍 Contacting Driver',
-        snippet: '$driverName (Driver $queuePosition of $totalDrivers)',
-      ),
-      zIndex: 1000, // Make sure it's on top
-    );
-
-    // Move camera to show the driver
-    if (mapController != null) {
-      mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(driverLocation, 14),
-      );
+  /// Update notified/rejected driver counts (broadcast notification)
+  void updateDriverCounts({
+    required int notifiedCount,
+    required int rejectedCount,
+    List<SearchingDriverInfo>? drivers,
+    String? driverImagePath,
+  }) {
+    notifiedDriverCount = notifiedCount;
+    rejectedDriverCount = rejectedCount;
+    if (drivers != null) {
+      searchingDriverInfoList = drivers;
     }
-
-    printX('✅ Showing searching driver marker at $driverLocation');
+    if (driverImagePath != null && driverImagePath.isNotEmpty) {
+      searchingDriverImagePath = driverImagePath;
+    }
+    printX('📊 Driver counts updated: notified=$notifiedCount, rejected=$rejectedCount, avatars=${searchingDriverInfoList.length}');
     update();
   }
 
-  /// Clear searching driver marker (when driver accepts or timeout)
+  /// Clear searching driver marker and reset counts
   void clearSearchingDriverMarker() {
     searchingDriverMarker = null;
     searchingDriverLocation = null;
-    currentSearchingDriverName = null;
-    currentQueuePosition = null;
-    totalDriversInQueue = null;
+    notifiedDriverCount = 0;
+    rejectedDriverCount = 0;
+    searchingDriverInfoList = [];
+    searchingDriverImagePath = '';
     update();
-    printX('🔴 Cleared searching driver marker');
+    printX('🔴 Cleared searching driver state');
   }
 
   /// Public method to receive driver location updates

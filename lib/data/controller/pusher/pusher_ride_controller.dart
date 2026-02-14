@@ -269,42 +269,52 @@ class PusherRideController extends GetxController {
     printX('🔍 Driver searching event received');
 
     try {
-      final currentDriver = enventResponse.data?.currentDriver;
-      final queuePosition = enventResponse.data?.queuePosition ?? 1;
-      final totalDrivers = enventResponse.data?.totalDrivers ?? 1;
+      final notifiedCount = enventResponse.data?.notifiedCount ?? 0;
+      final rejectedCount = enventResponse.data?.rejectedCount ?? 0;
+      final status = enventResponse.data?.searchStatus ?? '';
       final message = enventResponse.data?.searchMessage ?? '';
 
-      if (currentDriver != null) {
-        // A specific driver is being contacted
-        final lat = StringConverter.formatDouble(currentDriver['latitude']?.toString() ?? '0', precision: 10);
-        final lng = StringConverter.formatDouble(currentDriver['longitude']?.toString() ?? '0', precision: 10);
-        final driverName = currentDriver['name']?.toString() ?? 'Driver';
+      // Update driver counts on map controller
+      rideDetailsController.mapController.updateDriverCounts(
+        notifiedCount: notifiedCount,
+        rejectedCount: rejectedCount,
+        drivers: enventResponse.data?.searchingDrivers,
+        driverImagePath: enventResponse.data?.driverImagePath,
+      );
 
-        if (lat != 0.0 && lng != 0.0) {
-          // Show green marker for driver being contacted
-          rideDetailsController.mapController.showSearchingDriverMarker(driverLocation: LatLng(lat, lng), driverName: driverName, queuePosition: queuePosition, totalDrivers: totalDrivers);
+      printX('📊 Drivers: $notifiedCount notified, $rejectedCount rejected');
 
-          printX('✅ Showing driver marker at ($lat, $lng) - Driver $queuePosition of $totalDrivers');
-        }
-
-        // Show notification to rider
-        Get.snackbar('🔍 Searching for Driver', 'Contacting driver $queuePosition of $totalDrivers nearby...', snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 3), backgroundColor: Get.theme.colorScheme.primaryContainer, colorText: Get.theme.colorScheme.onPrimaryContainer);
-      } else {
-        // No specific driver — queue exhausted, searching for new drivers
-        // Clear the old driver marker so rider doesn't see stale info
-        rideDetailsController.mapController.clearSearchingDriverMarker();
-
-        printX('🔄 Queue refreshing — cleared old driver marker');
-
-        // Show appropriate message
-        final displayMsg = message.isNotEmpty ? message : 'Looking for more drivers in your area...';
-        Get.snackbar('🔄 Searching for Drivers', displayMsg, snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 4), backgroundColor: Get.theme.colorScheme.primaryContainer, colorText: Get.theme.colorScheme.onPrimaryContainer);
+      // Show appropriate notification
+      if (status == 'all_rejected') {
+        Get.snackbar(
+          '🔄 Searching for More Drivers',
+          message.isNotEmpty ? message : 'Looking for more drivers in your area...',
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 4),
+          backgroundColor: Get.theme.colorScheme.primaryContainer,
+          colorText: Get.theme.colorScheme.onPrimaryContainer,
+        );
+      } else if (notifiedCount > 0) {
+        Get.snackbar(
+          '🔍 Contacting Drivers',
+          'Contacting $notifiedCount driver${notifiedCount > 1 ? 's' : ''} nearby...',
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 3),
+          backgroundColor: Get.theme.colorScheme.primaryContainer,
+          colorText: Get.theme.colorScheme.onPrimaryContainer,
+        );
       }
     } catch (e) {
       printX('❌ Error handling driver searching event: $e');
 
-      // Fallback notification
-      Get.snackbar('🔍 Searching for Driver', 'Contacting nearest available driver...', snackPosition: SnackPosition.TOP, duration: const Duration(seconds: 3), backgroundColor: Get.theme.colorScheme.primaryContainer, colorText: Get.theme.colorScheme.onPrimaryContainer);
+      Get.snackbar(
+        '🔍 Searching for Drivers',
+        'Contacting nearby drivers...',
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 3),
+        backgroundColor: Get.theme.colorScheme.primaryContainer,
+        colorText: Get.theme.colorScheme.onPrimaryContainer,
+      );
     }
   }
 

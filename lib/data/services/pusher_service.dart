@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:ovorideuser/core/helper/string_format_helper.dart';
 import 'package:ovorideuser/core/utils/method.dart';
@@ -7,10 +9,12 @@ import 'package:ovorideuser/data/model/global/response_model/response_model.dart
 import 'package:ovorideuser/data/services/api_client.dart';
 import 'package:pusher_channels_flutter/pusher_channels_flutter.dart';
 
-class PusherManager {
+class PusherManager with WidgetsBindingObserver {
   static final PusherManager _instance = PusherManager._internal();
   factory PusherManager() => _instance;
-  PusherManager._internal();
+  PusherManager._internal() {
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   final ApiClient apiClient = ApiClient(sharedPreferences: Get.find());
   final PusherChannelsFlutter pusher = PusherChannelsFlutter.getInstance();
@@ -18,6 +22,11 @@ class PusherManager {
 
   bool _isConnecting = false;
   String _channelName = "";
+
+  /// Track when app went to background to detect stale connections
+  DateTime? _backgroundedAt;
+  Timer? _keepAliveTimer;
+  static const int _backgroundThresholdSeconds = 30;
 
   Future<void> init(String channelName) async {
     if (_isConnecting) return;
@@ -66,12 +75,71 @@ class PusherManager {
 
     await _connect(channelName);
     _isConnecting = false;
+    _startKeepAlive();
+  }
+
+  // ─── App lifecycle handling ────────────────────────────────────
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final platform = Platform.isIOS ? "iOS" : "Android";
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _backgroundedAt = DateTime.now();
+      _stopKeepAlive();
+      printX("⏸️ [$platform] App backgrounded at $_backgroundedAt");
+    } else if (state == AppLifecycleState.resumed) {
+      final wasBackgroundedFor = _backgroundedAt != null ? DateTime.now().difference(_backgroundedAt!).inSeconds : 0;
+      printX("▶️ [$platform] App resumed after ${wasBackgroundedFor}s");
+      _backgroundedAt = null;
+
+      // If backgrounded longer than threshold, force full reconnect
+      // because the WebSocket is likely dead even if Pusher reports 'connected'
+      if (wasBackgroundedFor > _backgroundThresholdSeconds) {
+        printX("🔄 [$platform] Stale connection likely — forcing full reconnect");
+        forceReconnect();
+      } else {
+        // Quick check — if state says connected, verify with a subscribe
+        ensureConnection();
+      }
+      _startKeepAlive();
+    }
+  }
+
+  /// Periodic keep-alive: checks connection every 45s and reconnects if dead
+  void _startKeepAlive() {
+    _stopKeepAlive();
+    _keepAliveTimer = Timer.periodic(const Duration(seconds: 45), (_) {
+      if (!isConnected() && !_isConnecting && _channelName.isNotEmpty) {
+        printX("💓 Keep-alive detected dead connection — reconnecting");
+        forceReconnect();
+      }
+    });
+  }
+
+  void _stopKeepAlive() {
+    _keepAliveTimer?.cancel();
+    _keepAliveTimer = null;
+  }
+
+  /// Force disconnect + full reconnect. Call when connection is suspected stale.
+  Future<void> forceReconnect() async {
+    if (_isConnecting || _channelName.isEmpty) return;
+    printX("🔌 Force reconnect: disconnecting then re-initializing");
+    await _disconnect();
+    // Small delay to let native socket fully close
+    await Future.delayed(const Duration(milliseconds: 500));
+    await init(_channelName);
   }
 
   // Continuous connection management
   Future<void> ensureConnection() async {
-    if (isConnected() || _isConnecting) return;
+    if (_isConnecting) return;
     if (_channelName.isEmpty) return;
+
+    if (isConnected()) {
+      // Even if reported connected, make sure channel subscription is alive
+      await _subscribe(_channelName);
+      return;
+    }
 
     _connect(_channelName);
   }
@@ -118,11 +186,14 @@ class PusherManager {
   }
 
   Future<void> _subscribe(String channelName) async {
-    if (pusher.getChannel(channelName) != null) {
-      printX("✅ Already subscribed");
-      return;
-    }
+    // Always try to subscribe — if channel already exists, unsubscribe first
+    // to ensure a fresh subscription (fixes stale subscriptions after reconnect)
     try {
+      if (pusher.getChannel(channelName) != null) {
+        try {
+          await pusher.unsubscribe(channelName: channelName);
+        } catch (_) {}
+      }
       await pusher.subscribe(channelName: channelName);
     } catch (e) {
       printE("⚠️ Subscribe error: $e");
@@ -147,11 +218,11 @@ class PusherManager {
     }
 
     if (current.toLowerCase() == 'disconnected' && previous.toLowerCase() == 'connected' && !_isConnecting) {
-      printX("⏳ [$platform] Will attempt reconnect in 3 seconds...");
+      printX("⏳ [$platform] Disconnected unexpectedly — will force reconnect in 3s...");
       Future.delayed(const Duration(seconds: 3), () {
         if (!isConnected() && !_isConnecting) {
-          printX("🔄 [$platform] Attempting auto-reconnect...");
-          _connect(_channelName);
+          printX("🔄 [$platform] Force reconnecting after unexpected disconnect...");
+          forceReconnect();
         }
       });
     }
