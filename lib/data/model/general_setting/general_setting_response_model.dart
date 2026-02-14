@@ -237,7 +237,11 @@ class GeneralSetting {
         package: json["package"]?.toString(),
         reservation: json["reservation"]?.toString(),
         popupModal: json["popup_modal"]?.toString(),
-        popupSettings: json["popup_settings"] == null ? null : PopupSettings.fromJson(json["popup_settings"]),
+        popupSettings: json["popup_settings"] == null
+            ? null
+            : PopupSettings.fromJson(
+                json["popup_settings"] is String ? jsonDecode(json["popup_settings"]) : json["popup_settings"],
+              ),
       );
 
   Map<String, dynamic> toJson() => {
