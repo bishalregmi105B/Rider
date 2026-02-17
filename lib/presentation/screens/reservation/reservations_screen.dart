@@ -26,7 +26,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> with SingleTick
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Load reservations
     final controller = Get.find<ReservationController>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -52,7 +52,11 @@ class _ReservationsScreenState extends State<ReservationsScreen> with SingleTick
           if (widget.onBackPress != null) {
             widget.onBackPress!();
           } else {
-            Get.back();
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Get.back();
+            }
           }
         },
         actionsWidget: [
@@ -128,9 +132,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> with SingleTick
                     ),
                     // History Tab
                     _buildReservationList(
-                      controller.historyReservationList.isEmpty 
-                          ? controller.completedReservations + controller.cancelledReservations
-                          : controller.historyReservationList,
+                      controller.historyReservationList.isEmpty ? controller.completedReservations + controller.cancelledReservations : controller.historyReservationList,
                       MyStrings.noReservationHistory.tr,
                       controller.isLoading,
                     ),

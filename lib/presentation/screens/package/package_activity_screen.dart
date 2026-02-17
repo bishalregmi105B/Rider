@@ -25,7 +25,7 @@ class _PackageActivityScreenState extends State<PackageActivityScreen> with Sing
   void initState() {
     super.initState();
     tabController = TabController(length: 2, vsync: this, initialIndex: selectedTab);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((time) {
       final controller = Get.find<PackageController>();
       // Load data based on selected tab
@@ -46,7 +46,7 @@ class _PackageActivityScreenState extends State<PackageActivityScreen> with Sing
   void changeTab(int index) {
     selectedTab = index;
     final controller = Get.find<PackageController>();
-    
+
     if (index == 0) {
       controller.loadAvailablePackages();
     } else {
@@ -67,7 +67,11 @@ class _PackageActivityScreenState extends State<PackageActivityScreen> with Sing
               widget.onBackPress?.call();
             }
           } else {
-            Get.back();
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Get.back();
+            }
           }
         },
       ),
@@ -128,9 +132,7 @@ class _PackageActivityScreenState extends State<PackageActivityScreen> with Sing
                   padding: const EdgeInsets.symmetric(
                     horizontal: Dimensions.space10,
                   ),
-                  child: selectedTab == 0 
-                      ? const AvailablePackagesTab()
-                      : const MyPackagesTab(showActiveOnly: false),
+                  child: selectedTab == 0 ? const AvailablePackagesTab() : const MyPackagesTab(showActiveOnly: false),
                 ),
               ),
             ],

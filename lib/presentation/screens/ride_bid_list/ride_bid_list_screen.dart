@@ -38,7 +38,11 @@ class _RideBidListScreenState extends State<RideBidListScreen> {
       appBar: CustomAppBar(
         title: MyStrings.availableBids,
         backBtnPress: () {
-          Get.back();
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            Get.back();
+          }
         },
       ),
       body: GetBuilder<RideBidListController>(
