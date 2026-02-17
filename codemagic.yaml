@@ -54,6 +54,8 @@ workflows:
     integrations:
       app_store_connect: Codemagic
     environment:
+      groups:
+        - Ash
       vars:
         BUNDLE_ID: "com.merorides.meroridesuser"
         XCODE_WORKSPACE: "ios/Runner.xcworkspace"
@@ -78,7 +80,7 @@ workflows:
           cd ios && pod install --repo-update && cd ..
       - name: Fetch signing files
         script: |
-          openssl genrsa -out /tmp/cert_key.pem 2048
+          echo "$CERTIFICATE_PRIVATE_KEY" > /tmp/cert_key.pem
           app-store-connect fetch-signing-files "com.merorides.meroridesuser" \
             --type IOS_APP_STORE \
             --create \
@@ -94,8 +96,12 @@ workflows:
             --release \
             --build-number=$(($(date +%s) / 60)) \
             --export-options-plist=/Users/builder/export_options.plist
+      - name: Build iOS Simulator App
+        script: |
+          flutter build ios --debug --simulator
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/ios/iphonesimulator/Runner.app
     publishing:
       app_store_connect:
         auth: integration
@@ -115,6 +121,8 @@ workflows:
     integrations:
       app_store_connect: Codemagic
     environment:
+      groups:
+        - Ash
       vars:
         PACKAGE_NAME: "com.lamasparsha.merorider"
         BUNDLE_ID: "com.merorides.meroridesuser"
@@ -153,7 +161,7 @@ workflows:
           cd ios && pod install --repo-update && cd ..
       - name: Fetch signing files
         script: |
-          openssl genrsa -out /tmp/cert_key.pem 2048
+          echo "$CERTIFICATE_PRIVATE_KEY" > /tmp/cert_key.pem
           app-store-connect fetch-signing-files "com.merorides.meroridesuser" \
             --type IOS_APP_STORE \
             --create \
@@ -169,10 +177,14 @@ workflows:
             --release \
             --build-number=$(($(date +%s) / 60)) \
             --export-options-plist=/Users/builder/export_options.plist
+      - name: Build iOS Simulator App
+        script: |
+          flutter build ios --debug --simulator
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
       - build/app/outputs/bundle/release/app-release.aab
       - build/ios/ipa/*.ipa
+      - build/ios/iphonesimulator/Runner.app
     publishing:
       app_store_connect:
         auth: integration
