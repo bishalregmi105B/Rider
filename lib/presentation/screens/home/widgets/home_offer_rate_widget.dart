@@ -152,13 +152,11 @@ class _HomeOfferRateWidgetState extends State<HomeOfferRateWidget> {
 
                       if (enterValue < max + 1 && enterValue >= min) {
                         controller.updateMainAmount(enterValue);
-                        Get.back();
+                        Navigator.pop(context);
                       } else {
                         CustomSnackBar.error(
                           errorList: [
-                            Get.find<LocalStorageService>().canShowPrices()
-                                ? '${MyStrings.pleaseEnterMinimum.tr} ${controller.defaultCurrencySymbol}${StringConverter.formatNumber(controller.selectedService.minAmount ?? '0')} to ${controller.defaultCurrencySymbol}${StringConverter.formatNumber(controller.selectedService.maxAmount ?? '')}'
-                                : MyStrings.pleaseEnterValidAmount.tr,
+                            Get.find<LocalStorageService>().canShowPrices() ? '${MyStrings.pleaseEnterMinimum.tr} ${controller.defaultCurrencySymbol}${StringConverter.formatNumber(controller.selectedService.minAmount ?? '0')} to ${controller.defaultCurrencySymbol}${StringConverter.formatNumber(controller.selectedService.maxAmount ?? '')}' : MyStrings.pleaseEnterValidAmount.tr,
                           ],
                         );
                       }

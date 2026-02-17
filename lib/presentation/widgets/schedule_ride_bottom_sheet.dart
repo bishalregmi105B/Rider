@@ -141,7 +141,7 @@ class _ScheduleRideBottomSheetState extends State<ScheduleRideBottomSheet> {
                 style: boldLarge.copyWith(fontSize: Dimensions.fontLarge),
               ),
               IconButton(
-                onPressed: () => Get.back(),
+                onPressed: () => Navigator.pop(context),
                 icon: Icon(Icons.close, color: MyColor.colorGrey),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -149,22 +149,20 @@ class _ScheduleRideBottomSheetState extends State<ScheduleRideBottomSheet> {
             ],
           ),
           SizedBox(height: Dimensions.space10),
-          
+
           // Subtitle
           Text(
             MyStrings.selectPickupDateTime.tr,
             style: regularDefault.copyWith(color: MyColor.colorGrey),
           ),
-          
+
           SizedBox(height: Dimensions.space25),
 
           // Date Picker
           _buildDateTimeTile(
             icon: Icons.calendar_today,
             title: MyStrings.pickupDate.tr,
-            value: selectedDate != null
-                ? DateFormat('EEEE, MMM d, y').format(selectedDate!)
-                : MyStrings.selectDate.tr,
+            value: selectedDate != null ? DateFormat('EEEE, MMM d, y').format(selectedDate!) : MyStrings.selectDate.tr,
             onTap: () => _selectDate(context),
           ),
 
@@ -174,9 +172,7 @@ class _ScheduleRideBottomSheetState extends State<ScheduleRideBottomSheet> {
           _buildDateTimeTile(
             icon: Icons.access_time,
             title: MyStrings.pickupTime.tr,
-            value: selectedTime != null
-                ? selectedTime!.format(context)
-                : MyStrings.selectTime.tr,
+            value: selectedTime != null ? selectedTime!.format(context) : MyStrings.selectTime.tr,
             onTap: () => _selectTime(context),
           ),
 
@@ -217,7 +213,7 @@ class _ScheduleRideBottomSheetState extends State<ScheduleRideBottomSheet> {
             press: isValid
                 ? () {
                     widget.onScheduleSelected(combinedDateTime!);
-                    Get.back();
+                    Navigator.pop(context);
                   }
                 : () {}, // Provide empty function for disabled state
             bgColor: isValid ? MyColor.primaryColor : MyColor.colorGrey,
@@ -269,9 +265,7 @@ class _ScheduleRideBottomSheetState extends State<ScheduleRideBottomSheet> {
                   Text(
                     value,
                     style: semiBoldDefault.copyWith(
-                      color: selectedDate != null || selectedTime != null
-                          ? MyColor.colorBlack
-                          : MyColor.colorGrey,
+                      color: selectedDate != null || selectedTime != null ? MyColor.colorBlack : MyColor.colorGrey,
                     ),
                   ),
                 ],
