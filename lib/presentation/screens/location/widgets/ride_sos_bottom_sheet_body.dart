@@ -36,7 +36,7 @@ class RideDetailsSosBottomSheetBody extends StatelessWidget {
             if (controller.sosMsgController.text.isEmpty) {
               CustomSnackBar.error(errorList: ['Please Enter Message']);
             } else {
-              Get.back();
+              Navigator.pop(context);
               await controller.sos(id);
             }
           },

@@ -47,7 +47,7 @@ class RideMassageBottomSheet extends StatelessWidget {
               RoundedButton(
                 text: MyStrings.done.toTitleCase(),
                 press: () {
-                  Get.back();
+                  Navigator.pop(context);
                 },
               ),
             ],

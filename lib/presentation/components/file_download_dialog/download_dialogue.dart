@@ -66,12 +66,12 @@ class DownloadingDialogState extends State<DownloadingDialog> {
         },
       );
 
-      Get.back();
+      if (mounted) Navigator.pop(context);
       CustomSnackBar.success(
         successList: [MyStrings.fileDownloadedSuccess],
       );
     } catch (e) {
-      Get.back();
+      if (mounted) Navigator.pop(context);
       CustomSnackBar.error(errorList: [MyStrings.requestFail]);
     }
   }
@@ -113,4 +113,3 @@ class DownloadingDialogState extends State<DownloadingDialog> {
     );
   }
 }
-

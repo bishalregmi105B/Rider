@@ -181,7 +181,7 @@ class AppDialog {
                           RoundedButton(
                               text: MyStrings.continue_.tr,
                               press: () {
-                                Get.back();
+                                Navigator.pop(context);
                                 onTap();
                               }),
                           const SizedBox(height: Dimensions.space10),

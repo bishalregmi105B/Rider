@@ -97,7 +97,7 @@ class TipsBottomSheet extends StatelessWidget {
                     RoundedButton(
                       text: MyStrings.continue_.tr,
                       press: () {
-                        Get.back();
+                        Navigator.pop(context);
                       },
                     ),
                   ],

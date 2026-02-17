@@ -65,8 +65,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     });
   }
 
+  bool _isLoadingMarkers = false;
+
   Future<void> _loadWidgetMarker(SelectLocationController controller) async {
-    if (controller.mapController == null) return;
+    if (controller.mapController == null || _isLoadingMarkers) return;
+    _isLoadingMarkers = true;
     try {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         LatLng pickupLatLng = controller.pickupLatlong;
@@ -104,10 +107,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             },
           );
         }
-        setState(() {});
+        if (mounted) setState(() {});
+        _isLoadingMarkers = false;
       });
     } catch (e) {
       printE(e);
+      _isLoadingMarkers = false;
     }
   }
 

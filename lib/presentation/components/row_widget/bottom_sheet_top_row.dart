@@ -32,7 +32,7 @@ class BottomSheetTopRow extends StatelessWidget {
             ),
             CustomCircleAnimatedButton(
               onTap: () {
-                Get.back();
+                Navigator.pop(context);
               },
               height: 30,
               width: 30,
