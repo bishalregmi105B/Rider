@@ -51,12 +51,13 @@ workflows:
     name: iOS Workflow
     instance_type: mac_mini_m2
     max_build_duration: 120
+    integrations:
+      app_store_connect: Codemagic
     environment:
       vars:
         BUNDLE_ID: "com.lamasparsha.merorider"
         XCODE_WORKSPACE: "ios/Runner.xcworkspace"
         XCODE_SCHEME: "Runner"
-        XCODE_PROJECT: "ios/Runner.xcodeproj"
       flutter: stable
       xcode: latest
     triggering:
@@ -75,12 +76,31 @@ workflows:
       - name: Install pods
         script: |
           cd ios && pod install --repo-update && cd ..
-      - name: Build iOS Simulator App
+      - name: Fetch signing files
         script: |
-          flutter build ios --debug --simulator
+          openssl genrsa -out /tmp/cert_key.pem 2048
+          app-store-connect fetch-signing-files "com.lamasparsha.merorider" \
+            --type IOS_APP_STORE \
+            --create \
+            --certificate-key=@file:/tmp/cert_key.pem
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build iOS release
+        script: |
+          flutter build ipa \
+            --release \
+            --build-number=$(($(date +%s) / 60)) \
+            --export-options-plist=/Users/builder/export_options.plist
     artifacts:
-      - build/ios/iphonesimulator/Runner.app
+      - build/ios/ipa/*.ipa
     publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        expire_build_submitted_for_review: true
       slack:
         channel: '#builds'
         notify_on_build_start: true
@@ -92,6 +112,8 @@ workflows:
     name: Full Build (Android + iOS)
     instance_type: mac_mini_m2
     max_build_duration: 120
+    integrations:
+      app_store_connect: Codemagic
     environment:
       vars:
         PACKAGE_NAME: "com.lamasparsha.merorider"
@@ -129,14 +151,33 @@ workflows:
       - name: Install iOS pods
         script: |
           cd ios && pod install --repo-update && cd ..
-      - name: Build iOS Simulator App
+      - name: Fetch signing files
         script: |
-          flutter build ios --debug --simulator
+          openssl genrsa -out /tmp/cert_key.pem 2048
+          app-store-connect fetch-signing-files "com.lamasparsha.merorider" \
+            --type IOS_APP_STORE \
+            --create \
+            --certificate-key=@file:/tmp/cert_key.pem
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build iOS release
+        script: |
+          flutter build ipa \
+            --release \
+            --build-number=$(($(date +%s) / 60)) \
+            --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
       - build/app/outputs/bundle/release/app-release.aab
-      - build/ios/iphonesimulator/Runner.app
+      - build/ios/ipa/*.ipa
     publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        expire_build_submitted_for_review: true
       slack:
         channel: '#builds'
         notify_on_build_start: true
