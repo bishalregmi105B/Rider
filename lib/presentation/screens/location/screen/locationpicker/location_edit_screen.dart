@@ -215,7 +215,7 @@ class _EditLocationPickerScreenState extends State<EditLocationPickerScreen> {
                       ),
                       color: MyColor.colorBlack,
                       onPressed: () {
-                        Get.back(result: true);
+                        Navigator.pop(context, true);
                       },
                       icon: const Icon(Icons.arrow_back_ios_new_rounded),
                     ),
@@ -321,7 +321,7 @@ class _EditLocationPickerScreenState extends State<EditLocationPickerScreen> {
                 RoundedButton(
                   text: MyStrings.confirm,
                   press: () {
-                    Get.back();
+                    Navigator.pop(context);
                   },
                   isOutlined: false,
                 ),

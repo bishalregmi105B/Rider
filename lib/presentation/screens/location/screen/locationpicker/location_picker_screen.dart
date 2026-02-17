@@ -211,7 +211,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     child: IconButton(
                       style: IconButton.styleFrom(backgroundColor: MyColor.colorWhite),
                       color: MyColor.colorBlack,
-                      onPressed: () => Get.back(result: true),
+                      onPressed: () => Navigator.pop(context, true),
                       icon: const Icon(Icons.arrow_back_ios_new_rounded),
                     ),
                   ),
@@ -479,7 +479,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 RoundedButton(
                   text: MyStrings.confirmLocation,
                   press: () {
-                    Get.back(result: 'true');
+                    Navigator.pop(context, 'true');
                   },
                   isOutlined: false,
                 )
